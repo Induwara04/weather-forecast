@@ -1,0 +1,84 @@
+openapi: 3.0.3
+info:
+  title: AI Weather Guidance Service
+  version: 1.0.0
+  description: OpenAI-backed weather guidance API for the dashboard.
+servers:
+  - url: /
+paths:
+  /health:
+    get:
+      summary: Health check
+      operationId: getHealth
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                required:
+                  - ok
+  /api/weather-guidance:
+    post:
+      summary: Generate weather guidance
+      operationId: generateWeatherGuidance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                home:
+                  type: object
+                  additionalProperties: true
+                topArea:
+                  type: object
+                  additionalProperties: true
+                next24Hours:
+                  type: array
+                  items:
+                    type: object
+                    additionalProperties: true
+              required:
+                - home
+                - topArea
+                - next24Hours
+      responses:
+        '200':
+          description: Weather guidance generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  summary:
+                    type: string
+                  suggestions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        title:
+                          type: string
+                        detail:
+                          type: string
+                      required:
+                        - title
+                        - detail
+                  model:
+                    type: string
+                required:
+                  - summary
+                  - suggestions
+                  - model
+        '400':
+          description: Invalid request
+        '500':
+          description: Internal error
+        '502':
+          description: Upstream AI error
