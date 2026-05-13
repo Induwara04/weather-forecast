@@ -14,7 +14,7 @@ WORKDIR /app
 
 COPY --from=build /app/dist ./dist
 COPY server.mjs ./server.mjs
-COPY config.js ./config.js
+# COPY config.js ./config.js
 
 EXPOSE 8080
 
