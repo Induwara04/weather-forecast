@@ -6,7 +6,6 @@ WORKDIR /app
 
 COPY --chown=appuser:appgroup package.json ./
 COPY --chown=appuser:appgroup server.mjs ./
-COPY --chown=appuser:appgroup config.js ./
 
 EXPOSE 8080
 
