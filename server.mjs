@@ -8,7 +8,7 @@ import {
   serveConfigJs,
 } from './server/weatherGuidanceService.mjs';
 
-const rootDir = process.cwd();
+const rootDir = path.dirname(new URL(import.meta.url).pathname);
 const distDir = path.join(rootDir, 'dist');
 const configPath = path.join(rootDir, 'config.js');
 const args = process.argv.slice(2);
@@ -123,4 +123,5 @@ const server = createServer(async (request, response) => {
 
 server.listen(port, '0.0.0.0', () => {
   console.log(`Server listening on http://0.0.0.0:${port}`);
+  console.log(`Config path: ${configPath} (${existsSync(configPath) ? 'found' : 'not found — using empty config'})`);
 });
