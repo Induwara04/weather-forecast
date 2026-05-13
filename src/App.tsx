@@ -20,7 +20,9 @@ import WaterDropRounded from '@mui/icons-material/WaterDropRounded';
 import AirRounded from '@mui/icons-material/AirRounded';
 import WarningAmberRounded from '@mui/icons-material/WarningAmberRounded';
 import BoltRounded from '@mui/icons-material/BoltRounded';
+import AutoAwesomeRounded from '@mui/icons-material/AutoAwesomeRounded';
 import WbSunnyRounded from '@mui/icons-material/WbSunnyRounded';
+import CloudRounded from '@mui/icons-material/CloudRounded';
 import PlaceRounded from '@mui/icons-material/PlaceRounded';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, LineChart, Line, BarChart, Bar, Cell } from 'recharts';
 import { fetchDashboardPayload } from './lib/openMeteo';
@@ -102,6 +104,176 @@ const formatClock = (input: string) =>
     minute: '2-digit',
   }).format(new Date(input));
 
+const formatDayName = (input: string) =>
+  new Intl.DateTimeFormat('en-LK', {
+    weekday: 'short',
+  }).format(new Date(input));
+
+const getDailyWeatherIcon = (weatherCode: number) => {
+  if ([95, 96, 99].includes(weatherCode)) {
+    return <BoltRounded sx={{ fontSize: 38, color: '#f2b75e' }} />;
+  }
+
+  if (
+    [51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(weatherCode)
+  ) {
+    return <WaterDropRounded sx={{ fontSize: 38, color: '#68c7ff' }} />;
+  }
+
+  if ([0, 1].includes(weatherCode)) {
+    return <WbSunnyRounded sx={{ fontSize: 38, color: '#ffd166' }} />;
+  }
+
+  return <CloudRounded sx={{ fontSize: 38, color: '#eef7ff' }} />;
+};
+
+const getHomeAlertGraphic = ({
+  title,
+  tone,
+  rainMm,
+  rainChance,
+  hotspotName,
+  hotspotScore,
+}: {
+  title: string;
+  tone: 'error' | 'warning' | 'info' | 'success';
+  rainMm: number;
+  rainChance: number;
+  hotspotName: string;
+  hotspotScore: number;
+}) => {
+  if (title === 'Rain alert') {
+    return {
+      icon: <WaterDropRounded sx={{ fontSize: 28, color: '#68c7ff' }} />,
+      accent: '#68c7ff',
+      background: 'linear-gradient(135deg, rgba(104,199,255,0.22), rgba(104,199,255,0.08))',
+      label: 'Today rain',
+      value: `${rainMm.toFixed(0)} mm`,
+      subvalue: `${rainChance.toFixed(0)}% chance`,
+    };
+  }
+
+  if (title === 'National hotspot') {
+    return {
+      icon: <PlaceRounded sx={{ fontSize: 28, color: '#7bf2e3' }} />,
+      accent: '#7bf2e3',
+      background: 'linear-gradient(135deg, rgba(123,242,227,0.22), rgba(123,242,227,0.08))',
+      label: 'Top area',
+      value: hotspotName,
+      subvalue: `${hotspotScore.toFixed(0)} / 100`,
+    };
+  }
+
+  if (title === 'Wind alert') {
+    return {
+      icon: <AirRounded sx={{ fontSize: 28, color: '#ffc857' }} />,
+      accent: '#ffc857',
+      background: 'linear-gradient(135deg, rgba(255,200,87,0.22), rgba(255,200,87,0.08))',
+      label: 'Wind risk',
+      value: 'Gust watch',
+      subvalue: 'Outdoor caution',
+    };
+  }
+
+  if (title === 'Air quality alert') {
+    return {
+      icon: <CloudRounded sx={{ fontSize: 28, color: '#ff9b54' }} />,
+      accent: '#ff9b54',
+      background: 'linear-gradient(135deg, rgba(255,155,84,0.22), rgba(255,155,84,0.08))',
+      label: 'Air quality',
+      value: 'AQI watch',
+      subvalue: 'Sensitive groups',
+    };
+  }
+
+  if (title === 'UV alert') {
+    return {
+      icon: <WbSunnyRounded sx={{ fontSize: 28, color: '#ffd166' }} />,
+      accent: '#ffd166',
+      background: 'linear-gradient(135deg, rgba(255,209,102,0.22), rgba(255,209,102,0.08))',
+      label: 'UV peak',
+      value: 'Sun exposure',
+      subvalue: 'Midday caution',
+    };
+  }
+
+  if (tone === 'success') {
+    return {
+      icon: <CloudRounded sx={{ fontSize: 28, color: '#59e390' }} />,
+      accent: '#59e390',
+      background: 'linear-gradient(135deg, rgba(89,227,144,0.22), rgba(89,227,144,0.08))',
+      label: 'Status',
+      value: 'Calmer window',
+      subvalue: 'No severe trigger',
+    };
+  }
+
+  return {
+    icon: <WarningAmberRounded sx={{ fontSize: 28, color: '#eef7ff' }} />,
+    accent: '#eef7ff',
+    background: 'linear-gradient(135deg, rgba(238,247,255,0.18), rgba(238,247,255,0.06))',
+    label: 'Weather',
+    value: 'Active signal',
+    subvalue: 'Monitor closely',
+  };
+};
+
+const getGuidanceSuggestionGraphic = (title: string, detail: string) => {
+  const content = `${title} ${detail}`.toLowerCase();
+
+  if (/(rain|shower|drizzle|wet|umbrella|storm)/.test(content)) {
+    return {
+      icon: <WaterDropRounded sx={{ fontSize: 24, color: '#68c7ff' }} />,
+      accent: '#68c7ff',
+      background: 'linear-gradient(135deg, rgba(104,199,255,0.18), rgba(104,199,255,0.06))',
+      label: 'Rain Focus',
+    };
+  }
+
+  if (/(wind|gust|breeze)/.test(content)) {
+    return {
+      icon: <AirRounded sx={{ fontSize: 24, color: '#ffc857' }} />,
+      accent: '#ffc857',
+      background: 'linear-gradient(135deg, rgba(255,200,87,0.18), rgba(255,200,87,0.06))',
+      label: 'Wind Watch',
+    };
+  }
+
+  if (/(uv|sun|heat|shade|hydration)/.test(content)) {
+    return {
+      icon: <WbSunnyRounded sx={{ fontSize: 24, color: '#ffd166' }} />,
+      accent: '#ffd166',
+      background: 'linear-gradient(135deg, rgba(255,209,102,0.18), rgba(255,209,102,0.06))',
+      label: 'Exposure',
+    };
+  }
+
+  if (/(air|aqi|pm2|pm10|breath|smoke)/.test(content)) {
+    return {
+      icon: <CloudRounded sx={{ fontSize: 24, color: '#ff9b54' }} />,
+      accent: '#ff9b54',
+      background: 'linear-gradient(135deg, rgba(255,155,84,0.18), rgba(255,155,84,0.06))',
+      label: 'Air Quality',
+    };
+  }
+
+  if (/(home|roof|indoors|route|travel|commute)/.test(content)) {
+    return {
+      icon: <PlaceRounded sx={{ fontSize: 24, color: '#7bf2e3' }} />,
+      accent: '#7bf2e3',
+      background: 'linear-gradient(135deg, rgba(123,242,227,0.18), rgba(123,242,227,0.06))',
+      label: 'Planning',
+    };
+  }
+
+  return {
+    icon: <BoltRounded sx={{ fontSize: 24, color: '#eef7ff' }} />,
+    accent: '#eef7ff',
+    background: 'linear-gradient(135deg, rgba(238,247,255,0.14), rgba(238,247,255,0.04))',
+    label: 'Action',
+  };
+};
+
 const StatTile = ({
   icon,
   label,
@@ -114,25 +286,30 @@ const StatTile = ({
   detail: string;
 }) => (
   <Card sx={cardShell}>
-    <CardContent>
-      <Stack spacing={1.3}>
-        <Box
-          sx={{
-            width: 44,
-            height: 44,
-            display: 'grid',
-            placeItems: 'center',
-            borderRadius: 3,
-            backgroundColor: 'rgba(123,242,227,0.14)',
-            color: 'primary.main',
-          }}
-        >
-          {icon}
-        </Box>
-        <Typography variant="body2" color="text.secondary">
-          {label}
+    <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+      <Stack spacing={0.8}>
+        <Stack direction="row" spacing={0.9} alignItems="center">
+          <Box
+            sx={{
+              width: 32,
+              height: 32,
+              display: 'grid',
+              placeItems: 'center',
+              borderRadius: 1,
+              backgroundColor: 'rgba(123,242,227,0.14)',
+              color: 'primary.main',
+              flexShrink: 0,
+            }}
+          >
+            {icon}
+          </Box>
+          <Typography variant="body2" color="text.secondary">
+            {label}
+          </Typography>
+        </Stack>
+        <Typography variant="h4" sx={{ lineHeight: 1.05 }}>
+          {value}
         </Typography>
-        <Typography variant="h4">{value}</Typography>
         <Typography variant="body2" color="text.secondary">
           {detail}
         </Typography>
@@ -145,6 +322,7 @@ const App = () => {
   const [state, setState] = useState<LoadState>({ status: 'loading' });
   const [refreshing, setRefreshing] = useState(false);
   const [guidance, setGuidance] = useState<GuidanceState>({ status: 'idle' });
+  const [showAllHotspots, setShowAllHotspots] = useState(false);
 
   const loadDashboard = async (silent = false) => {
     if (!silent) {
@@ -265,11 +443,16 @@ const App = () => {
   const { data } = state;
   const { home, areas, generatedAt } = data;
   const topArea = areas[0];
+  const today = home.daily[0];
   const homeAlerts = buildHomeAlerts(home, topArea);
   const timeline = home.hourly.slice(0, 24).map((entry) => ({
     ...entry,
     label: formatShortTime(entry.time),
   }));
+  const dailyOutlook = home.daily.slice(0, 7);
+  const hotspotAreas = areas.slice(0, 8);
+  const visibleHotspots = showAllHotspots ? hotspotAreas : hotspotAreas.slice(0, 3);
+  const hasMoreHotspots = hotspotAreas.length > 3;
   const rainTimeline = home.hourly.slice(0, 24).map((entry) => ({
     ...entry,
     label: formatShortTime(entry.time),
@@ -377,12 +560,87 @@ const App = () => {
                       'Threshold-based alerts generated from the latest Open-Meteo forecast, air quality, and flood signals.',
                     )}
                     <Stack spacing={1.2}>
-                      {homeAlerts.map((alert) => (
-                        <Alert key={`${alert.title}-${alert.detail}`} severity={alert.tone}>
-                          <Typography variant="subtitle2">{alert.title}</Typography>
-                          <Typography variant="body2">{alert.detail}</Typography>
-                        </Alert>
-                      ))}
+                      {homeAlerts.map((alert) => {
+                        const graphic = getHomeAlertGraphic({
+                          title: alert.title,
+                          tone: alert.tone,
+                          rainMm: today?.precipitationSum ?? 0,
+                          rainChance: today?.precipitationProbabilityMax ?? 0,
+                          hotspotName: topArea?.location.name ?? 'Unknown',
+                          hotspotScore: topArea?.score ?? 0,
+                        });
+
+                        return (
+                          <Box
+                            key={`${alert.title}-${alert.detail}`}
+                            sx={{
+                              p: 1,
+                              borderRadius: 0.5,
+                              border: `1px solid ${graphic.accent}22`,
+                              backgroundColor: 'rgba(8,20,30,0.55)',
+                            }}
+                          >
+                            <Stack
+                              direction={{ xs: 'column', sm: 'row' }}
+                              spacing={1.5}
+                              justifyContent="space-between"
+                              alignItems={{ xs: 'flex-start', sm: 'center' }}
+                            >
+                              <Stack direction="row" spacing={1.1} alignItems="flex-start">
+                                <Box
+                                  sx={{
+                                    width: 38,
+                                    height: 38,
+                                    borderRadius: 0.5,
+                                    display: 'grid',
+                                    placeItems: 'center',
+                                    background: graphic.background,
+                                    border: `1px solid ${graphic.accent}33`,
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  {graphic.icon}
+                                </Box>
+                                <Stack spacing={0.25}>
+                                  <Typography variant="subtitle2" sx={{ color: graphic.accent }}>
+                                    {alert.title}
+                                  </Typography>
+                                  <Typography variant="body2">{alert.detail}</Typography>
+                                </Stack>
+                              </Stack>
+
+                              <Box
+                                sx={{
+                                  minWidth: { xs: '100%', sm: 96 },
+                                  px: 0.9,
+                                  py: 0.7,
+                                  borderRadius: 0.5,
+                                  background: graphic.background,
+                                  border: `1px solid ${graphic.accent}29`,
+                                }}
+                              >
+                                <Typography
+                                  variant="caption"
+                                  sx={{
+                                    display: 'block',
+                                    color: graphic.accent,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.12em',
+                                  }}
+                                >
+                                  {graphic.label}
+                                </Typography>
+                                <Typography variant="subtitle2" sx={{ mt: 0.35 }}>
+                                  {graphic.value}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {graphic.subvalue}
+                                </Typography>
+                              </Box>
+                            </Stack>
+                          </Box>
+                        );
+                      })}
                     </Stack>
                   </CardContent>
                 </Card>
@@ -427,7 +685,7 @@ const App = () => {
         </Grid>
 
         <Grid container spacing={2.2}>
-          <Grid size={{ xs: 12, lg: 8 }}>
+          <Grid size={{ xs: 12 }}>
             <Card sx={cardShell}>
               <CardContent>
                 {sectionTitle(
@@ -485,56 +743,274 @@ const App = () => {
                     </AreaChart>
                   </ResponsiveContainer>
                 </Box>
-              </CardContent>
-            </Card>
-          </Grid>
 
-          <Grid size={{ xs: 12, lg: 4 }}>
-            <Card sx={cardShell}>
-              <CardContent>
-                {sectionTitle(
-                  '7-Day Outlook',
-                  'Daily forecast rail',
-                  'Condensed daily planning view for the main area.',
-                )}
-                <Stack spacing={1.2}>
-                  {home.daily.map((day) => (
+                <Divider sx={{ my: 3, borderColor: 'rgba(255,255,255,0.08)' }} />
+
+                <Stack spacing={1.6}>
+                  <Stack
+                    direction={{ xs: 'column', sm: 'row' }}
+                    spacing={0.8}
+                    justifyContent="space-between"
+                    alignItems={{ xs: 'flex-start', sm: 'center' }}
+                  >
+                    <Box>
+                      <Typography
+                        variant="overline"
+                        sx={{ letterSpacing: '0.16em', color: 'primary.main', fontWeight: 700 }}
+                      >
+                        7-Day Outlook
+                      </Typography>
+                      <Typography variant="h6">Daily forecast rail</Typography>
+                    </Box>
+                    <Typography variant="body2" color="text.secondary">
+                      Swipe or scroll across the next 7 days.
+                    </Typography>
+                  </Stack>
+
+                  <Box
+                    sx={{
+                      overflowX: 'auto',
+                      pb: 1,
+                      '&::-webkit-scrollbar': {
+                        height: 8,
+                      },
+                      '&::-webkit-scrollbar-thumb': {
+                        backgroundColor: 'rgba(255,255,255,0.14)',
+                        borderRadius: 999,
+                      },
+                    }}
+                  >
                     <Box
-                      key={day.time}
                       sx={{
-                        p: 1.5,
-                        borderRadius: 1,
-                        border: '1px solid rgba(255,255,255,0.08)',
-                        backgroundColor: 'rgba(255,255,255,0.03)',
+                        display: 'flex',
+                        gap: 1.5,
+                        width: 'max-content',
+                        minWidth: '100%',
+                        justifyContent: 'center',
+                        scrollSnapType: 'x proximity',
                       }}
                     >
-                      <Stack
-                        direction="row"
-                        justifyContent="space-between"
-                        spacing={2}
-                        alignItems="center"
-                      >
-                        <Stack>
-                          <Typography variant="subtitle1">{formatShortDate(day.time)}</Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {formatWeatherLabel(day.weatherCode)}
-                          </Typography>
-                        </Stack>
-                        <Stack alignItems="flex-end">
-                          <Typography variant="subtitle1">
-                            {day.maxTemp.toFixed(0)}° / {day.minTemp.toFixed(0)}°
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            {day.precipitationSum.toFixed(0)} mm • UV {day.maxUv.toFixed(1)}
-                          </Typography>
-                        </Stack>
-                      </Stack>
+                      {dailyOutlook.map((day, index) => (
+                        <Box
+                          key={day.time}
+                          sx={{
+                            minWidth: { xs: 104, sm: 118, md: 126 },
+                            px: { xs: 2, sm: 2.25 },
+                            py: { xs: 2, sm: 2.4 },
+                            borderRadius: 1,
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            background:
+                              index === 0
+                                ? 'linear-gradient(180deg, rgba(116,120,142,0.42), rgba(86,90,108,0.36))'
+                                : 'rgba(255,255,255,0.03)',
+                            scrollSnapAlign: 'start',
+                            flexShrink: 0,
+                          }}
+                        >
+                          <Stack spacing={1.2} alignItems="center">
+                            <Stack spacing={0.15} alignItems="center">
+                              <Typography variant="h5" sx={{ fontWeight: 500 }}>
+                                {formatDayName(day.time)}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {formatShortDate(day.time)}
+                              </Typography>
+                            </Stack>
+
+                            <Box
+                              sx={{
+                                width: 52,
+                                height: 52,
+                                display: 'grid',
+                                placeItems: 'center',
+                              }}
+                            >
+                              {getDailyWeatherIcon(day.weatherCode)}
+                            </Box>
+
+                            <Stack spacing={0.35} alignItems="center">
+                              <Typography
+                                variant="h4"
+                                sx={{ fontWeight: 600, lineHeight: 1, letterSpacing: '-0.02em' }}
+                              >
+                                {day.maxTemp.toFixed(0)}°
+                              </Typography>
+                              <Typography variant="h6" color="text.secondary" sx={{ lineHeight: 1 }}>
+                                {day.minTemp.toFixed(0)}°
+                              </Typography>
+                            </Stack>
+                          </Stack>
+                        </Box>
+                      ))}
                     </Box>
-                  ))}
+                  </Box>
                 </Stack>
               </CardContent>
             </Card>
           </Grid>
+        </Grid>
+
+        <Grid container spacing={2.2}>
+          <Grid size={{ xs: 12 }}>
+            <Card sx={cardShell}>
+              <CardContent>
+                {sectionTitle(
+                  'AI Guidance',
+                  'Next 24-hour home advice',
+                  'OpenAI reviews your home forecast, air quality, and short-range weather trend to generate practical suggestions.',
+                )}
+                <Stack spacing={2}>
+                  <Box
+                    sx={{
+                      p: { xs: 1.2, md: 1.5 },
+                      borderRadius: 1,
+                      border: '1px solid rgba(123,242,227,0.12)',
+                      background:
+                        'radial-gradient(circle at top left, rgba(123,242,227,0.14), rgba(255,255,255,0.02) 58%)',
+                    }}
+                  >
+                    <Stack
+                      direction={{ xs: 'column', lg: 'row' }}
+                      spacing={1.4}
+                      justifyContent="space-between"
+                      alignItems={{ xs: 'flex-start', lg: 'center' }}
+                    >
+                      <Stack spacing={0.7}>
+                        <Stack direction="row" spacing={0.8} alignItems="center">
+                          <Box
+                            sx={{
+                              width: 34,
+                              height: 34,
+                              display: 'grid',
+                              placeItems: 'center',
+                              borderRadius: 1,
+                              backgroundColor: 'rgba(123,242,227,0.14)',
+                              color: 'primary.main',
+                              flexShrink: 0,
+                            }}
+                          >
+                            <AutoAwesomeRounded fontSize="small" />
+                          </Box>
+                          <Typography variant="overline" sx={{ color: 'primary.main', fontWeight: 700 }}>
+                            AI summary
+                          </Typography>
+                        </Stack>
+                        <Typography variant="h6" sx={{ maxWidth: 900, lineHeight: 1.3 }}>
+                          {guidance.status === 'success'
+                            ? guidance.summary
+                            : guidance.status === 'error'
+                              ? 'Guidance is temporarily unavailable for the latest forecast window.'
+                              : 'Generating a concise action brief from the latest 24-hour weather pattern.'}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Guidance is generated for {home.location.name} using the next 24 hours of forecast data.
+                        </Typography>
+                      </Stack>
+
+                      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                        <Chip label={home.location.name} sx={{ backgroundColor: 'rgba(255,255,255,0.06)' }} />
+                        <Chip label="24h horizon" sx={{ backgroundColor: 'rgba(255,255,255,0.06)' }} />
+                      </Stack>
+                    </Stack>
+                  </Box>
+
+                  {guidance.status === 'loading' ? <LinearProgress color="secondary" /> : null}
+
+                  {guidance.status === 'success' ? (
+                    <Grid container spacing={1.5}>
+                      {guidance.suggestions.map((item) => {
+                        const graphic = getGuidanceSuggestionGraphic(item.title, item.detail);
+
+                        return (
+                          <Grid key={item.title} size={{ xs: 12, md: 6, xl: 4 }}>
+                            <Box
+                              sx={{
+                                height: '100%',
+                                p: 1.6,
+                                borderRadius: 1,
+                                border: `1px solid ${graphic.accent}22`,
+                                background: 'rgba(255,255,255,0.025)',
+                              }}
+                            >
+                              <Stack spacing={1.1}>
+                                <Stack direction="row" justifyContent="space-between" spacing={1} alignItems="flex-start">
+                                  <Box
+                                    sx={{
+                                      width: 38,
+                                      height: 38,
+                                      display: 'grid',
+                                      placeItems: 'center',
+                                      borderRadius: 1,
+                                      background: graphic.background,
+                                      border: `1px solid ${graphic.accent}29`,
+                                      flexShrink: 0,
+                                    }}
+                                  >
+                                    {graphic.icon}
+                                  </Box>
+                                  <Chip
+                                    label={graphic.label}
+                                    size="small"
+                                    sx={{
+                                      backgroundColor: `${graphic.accent}14`,
+                                      color: graphic.accent,
+                                      fontWeight: 700,
+                                    }}
+                                  />
+                                </Stack>
+                                <Typography variant="subtitle1">{item.title}</Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                  {item.detail}
+                                </Typography>
+                              </Stack>
+                            </Box>
+                          </Grid>
+                        );
+                      })}
+                    </Grid>
+                  ) : null}
+
+                  {guidance.status === 'error' ? (
+                    <Box
+                      sx={{
+                        p: 1.5,
+                        borderRadius: 1,
+                        border: '1px solid rgba(255,111,97,0.2)',
+                        background: 'linear-gradient(135deg, rgba(255,111,97,0.14), rgba(255,111,97,0.05))',
+                      }}
+                    >
+                      <Stack direction="row" spacing={1.2} alignItems="flex-start">
+                        <Box
+                          sx={{
+                            width: 38,
+                            height: 38,
+                            display: 'grid',
+                            placeItems: 'center',
+                            borderRadius: 1,
+                            backgroundColor: 'rgba(255,111,97,0.16)',
+                            color: '#ff6f61',
+                            flexShrink: 0,
+                          }}
+                        >
+                          <WarningAmberRounded fontSize="small" />
+                        </Box>
+                        <Stack spacing={0.35}>
+                          <Typography variant="subtitle2" sx={{ color: '#ffb2aa' }}>
+                            Guidance service error
+                          </Typography>
+                          <Typography variant="body2">{guidance.message}</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Check the AI weather service route and try refreshing the dashboard.
+                          </Typography>
+                        </Stack>
+                      </Stack>
+                    </Box>
+                  ) : null}
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
+
         </Grid>
 
         <Grid container spacing={2.2}>
@@ -547,11 +1023,11 @@ const App = () => {
                   'Areas are ranked by rainfall, flood factor, gusts, AQI, and UV exposure.',
                 )}
                 <Stack spacing={1.2}>
-                  {areas.slice(0, 8).map((area, index) => (
+                  {visibleHotspots.map((area, index) => (
                     <Box
                       key={area.location.id}
                       sx={{
-                        p: 1.5,
+                        p: 1.25,
                         borderRadius: 1,
                         border: '1px solid rgba(255,255,255,0.08)',
                         background:
@@ -560,11 +1036,11 @@ const App = () => {
                             : 'rgba(255,255,255,0.025)',
                       }}
                     >
-                      <Stack spacing={1}>
+                      <Stack spacing={0.8}>
                         <Stack
                           direction={{ xs: 'column', sm: 'row' }}
                           justifyContent="space-between"
-                          spacing={1}
+                          spacing={0.8}
                         >
                           <Stack>
                             <Typography variant="subtitle1">{area.location.name}</Typography>
@@ -603,6 +1079,15 @@ const App = () => {
                       </Stack>
                     </Box>
                   ))}
+                  {hasMoreHotspots ? (
+                    <Button
+                      variant="text"
+                      onClick={() => setShowAllHotspots((current) => !current)}
+                      sx={{ alignSelf: 'flex-start', px: 0, minWidth: 0 }}
+                    >
+                      {showAllHotspots ? 'See less' : `See more (${hotspotAreas.length - 3})`}
+                    </Button>
+                  ) : null}
                 </Stack>
               </CardContent>
             </Card>
@@ -657,45 +1142,6 @@ const App = () => {
         </Grid>
 
         <Grid container spacing={2.2}>
-          <Grid size={{ xs: 12, lg: 5 }}>
-            <Card sx={cardShell}>
-              <CardContent>
-                {sectionTitle(
-                  'AI Guidance',
-                  'Next 24-hour home advice',
-                  'OpenAI reviews your home forecast, air quality, and short-range weather trend to generate three practical suggestions.',
-                )}
-                <Stack spacing={1.3}>
-                  {guidance.status === 'loading' ? <LinearProgress color="secondary" /> : null}
-                  <Typography variant="body2" color="text.secondary">
-                    Guidance is generated for {home.location.name} using the next 24 hours of forecast data.
-                  </Typography>
-
-                  {guidance.status === 'success' ? (
-                    <>
-                      <Alert severity="info">
-                        <Typography variant="body2">{guidance.summary}</Typography>
-                        <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }}>
-                          Model: {guidance.model}
-                        </Typography>
-                      </Alert>
-                      {guidance.suggestions.map((item) => (
-                        <Alert key={item.title} severity="success">
-                          <Typography variant="subtitle2">{item.title}</Typography>
-                          <Typography variant="body2">{item.detail}</Typography>
-                        </Alert>
-                      ))}
-                    </>
-                  ) : null}
-
-                  {guidance.status === 'error' ? (
-                    <Alert severity="error">{guidance.message}</Alert>
-                  ) : null}
-                </Stack>
-              </CardContent>
-            </Card>
-          </Grid>
-
           <Grid size={{ xs: 12, lg: 6 }}>
             <Card sx={cardShell}>
               <CardContent>
