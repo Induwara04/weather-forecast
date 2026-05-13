@@ -1,33 +1,60 @@
 # WSO2 Deployment
 
-This Vite React SPA can be deployed to WSO2 Developer Platform in two ways.
+This app now includes a small Node server for the OpenAI-backed country-capital lookup. The browser UI stays React/Vite, but the OpenAI API key is read server-side from `./config.js`.
 
-## Option 1: Build From Source
+## Runtime Config
 
-Use this when creating a `Web Application` component with the React preset.
+Mount a `config.js` file into the container at `./config.js` with this shape:
 
-- Build Command: `npm run build`
-- Build Path: `dist`
-- Node Version: `20`
-- Component Directory: `/`
+```js
+window.configs = {
+  OPENAI_API_KEY: 'replace-with-your-key',
+  OPENAI_MODEL: 'gpt-5.4-mini',
+  AI_WEATHER_SERVICE_URL: '',
+};
+```
 
-Notes:
-- WSO2 requires the Node version to be entered explicitly in the build form.
-- The generated static files are written to `dist/`.
+`OPENAI_MODEL` is optional.
+`AI_WEATHER_SERVICE_URL` is optional and should point to a separately deployed AI service if you split the architecture.
 
-## Option 2: Bring Your Dockerfile
+## Separate AI Service
 
-Use this when creating a `Web Application` component from a repository that contains a Dockerfile.
+This repository now includes a standalone deployable service in `ai-weather-service/`.
+
+Use it when you want the React dashboard and the OpenAI-backed guidance API to deploy as separate components.
+
+Frontend `config.js` example:
+
+```js
+window.configs = {
+  AI_WEATHER_SERVICE_URL: 'https://your-ai-service.example.com',
+};
+```
+
+The separate service has its own:
+
+- `ai-weather-service/Dockerfile`
+- `ai-weather-service/server.mjs`
+- `ai-weather-service/config.js`
+- `ai-weather-service/README.md`
+
+## Recommended Deploy Path
+
+Use the Dockerfile flow so both the SPA and the server endpoint run in the same container.
+
+Use this when creating a component from a repository that contains a Dockerfile.
 
 Files included in this repo:
 - `Dockerfile`
-- `nginx.conf`
+- `server.mjs`
+- `config.js`
 
 What it does:
 - Builds the app with Node 20
-- Serves the compiled SPA with `nginxinc/nginx-unprivileged`
+- Serves the compiled SPA with Node
+- Exposes `POST /api/country-capital` for the OpenAI lookup
 - Listens on port `8080`
-- Uses `try_files` fallback to `/index.html` so client-side routes work
+- Falls back to `index.html` for client-side routes
 
 Recommended values in WSO2 when using the Dockerfile flow:
 - Component Directory: `/`
@@ -36,7 +63,19 @@ Recommended values in WSO2 when using the Dockerfile flow:
 
 ## Local Verification
 
-Build the SPA:
+Run the API server:
+
+```bash
+npm run dev:server
+```
+
+Run the Vite client:
+
+```bash
+npm run dev
+```
+
+Build the app:
 
 ```bash
 npm run build

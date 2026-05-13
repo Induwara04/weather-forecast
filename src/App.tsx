@@ -24,6 +24,7 @@ import WbSunnyRounded from '@mui/icons-material/WbSunnyRounded';
 import PlaceRounded from '@mui/icons-material/PlaceRounded';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, LineChart, Line, BarChart, Bar, Cell } from 'recharts';
 import { fetchDashboardPayload } from './lib/openMeteo';
+import { fetchWeatherGuidance } from './lib/weatherGuidance';
 import { buildHomeAlerts, formatWeatherLabel, getAqiLabel } from './lib/risk';
 import type { AreaRisk, DashboardPayload } from './types';
 
@@ -31,6 +32,17 @@ type LoadState =
   | { status: 'loading' }
   | { status: 'error'; message: string }
   | { status: 'ready'; data: DashboardPayload };
+
+type GuidanceState =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | {
+      status: 'success';
+      summary: string;
+      suggestions: Array<{ title: string; detail: string }>;
+      model: string;
+    }
+  | { status: 'error'; message: string };
 
 const metricTone = (score: number) => {
   if (score >= 80) {
@@ -132,6 +144,7 @@ const StatTile = ({
 const App = () => {
   const [state, setState] = useState<LoadState>({ status: 'loading' });
   const [refreshing, setRefreshing] = useState(false);
+  const [guidance, setGuidance] = useState<GuidanceState>({ status: 'idle' });
 
   const loadDashboard = async (silent = false) => {
     if (!silent) {
@@ -161,6 +174,50 @@ const App = () => {
 
     return () => window.clearInterval(intervalId);
   }, []);
+
+  useEffect(() => {
+    if (state.status !== 'ready') {
+      return;
+    }
+
+    let cancelled = false;
+
+    const { home, areas, generatedAt } = state.data;
+    const topArea = areas[0];
+
+    const loadGuidance = async () => {
+      setGuidance({ status: 'loading' });
+
+      try {
+        const result = await fetchWeatherGuidance(home, topArea);
+
+        if (cancelled) {
+          return;
+        }
+
+        setGuidance({
+          status: 'success',
+          summary: result.summary,
+          suggestions: result.suggestions,
+          model: result.model,
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        const message =
+          error instanceof Error ? error.message : 'Unable to load AI weather guidance.';
+        setGuidance({ status: 'error', message });
+      }
+    };
+
+    void loadGuidance();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [state]);
 
   if (state.status === 'loading') {
     return (
@@ -232,11 +289,11 @@ const App = () => {
                     spacing={2}
                   >
                     <Stack spacing={1.2}>
-                      <Chip
+                      {/* <Chip
                         label="Open-Meteo Powered"
                         color="secondary"
                         sx={{ alignSelf: 'flex-start', fontWeight: 700 }}
-                      />
+                      /> */}
                       <Typography variant="h2" sx={{ fontSize: { xs: '2.3rem', md: '3.5rem' } }}>
                         Sri Lanka Weather Risk Dashboard
                       </Typography>
@@ -600,6 +657,45 @@ const App = () => {
         </Grid>
 
         <Grid container spacing={2.2}>
+          <Grid size={{ xs: 12, lg: 5 }}>
+            <Card sx={cardShell}>
+              <CardContent>
+                {sectionTitle(
+                  'AI Guidance',
+                  'Next 24-hour home advice',
+                  'OpenAI reviews your home forecast, air quality, and short-range weather trend to generate three practical suggestions.',
+                )}
+                <Stack spacing={1.3}>
+                  {guidance.status === 'loading' ? <LinearProgress color="secondary" /> : null}
+                  <Typography variant="body2" color="text.secondary">
+                    Guidance is generated for {home.location.name} using the next 24 hours of forecast data.
+                  </Typography>
+
+                  {guidance.status === 'success' ? (
+                    <>
+                      <Alert severity="info">
+                        <Typography variant="body2">{guidance.summary}</Typography>
+                        <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }}>
+                          Model: {guidance.model}
+                        </Typography>
+                      </Alert>
+                      {guidance.suggestions.map((item) => (
+                        <Alert key={item.title} severity="success">
+                          <Typography variant="subtitle2">{item.title}</Typography>
+                          <Typography variant="body2">{item.detail}</Typography>
+                        </Alert>
+                      ))}
+                    </>
+                  ) : null}
+
+                  {guidance.status === 'error' ? (
+                    <Alert severity="error">{guidance.message}</Alert>
+                  ) : null}
+                </Stack>
+              </CardContent>
+            </Card>
+          </Grid>
+
           <Grid size={{ xs: 12, lg: 6 }}>
             <Card sx={cardShell}>
               <CardContent>
