@@ -13,8 +13,9 @@ FROM node:20-alpine
 WORKDIR /app
 
 COPY --from=build /app/dist ./dist
-COPY server.mjs ./server.mjs
-# COPY config.js ./config.js
+COPY --from=build /app/server ./server
+COPY --from=build /app/server.mjs ./server.mjs
+# Mount runtime config at /app/config.js when deploying.
 
 EXPOSE 8080
 
