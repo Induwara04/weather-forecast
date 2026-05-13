@@ -3,6 +3,7 @@ info:
   title: AI Weather Guidance Service
   version: 1.0.0
   description: OpenAI-backed weather guidance API for the dashboard.
+x-wso2-disable-security: true
 servers:
   - url: /
 paths:
